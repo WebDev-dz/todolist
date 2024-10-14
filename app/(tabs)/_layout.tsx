@@ -1,41 +1,47 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 
-import { TabBarIcon } from '@/components/navigation/TabBarIcon';
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AntDesign } from '@expo/vector-icons';
+
+import { useAuth } from "@clerk/clerk-expo";
+import { Redirect } from "expo-router";
+
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
+  const { isSignedIn } = useAuth();
+
+  if (!isSignedIn) return  <Redirect href="/(auth)/welcome" />;
+
+ 
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: "",
         headerShown: false,
         tabBarStyle: {
           display: "none"
         }
-       
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
+            <AntDesign name="stepbackward" size={24} color="black" />
           ),
         }}
       />
       <Tabs.Screen
-        name="explore"
-        
+        name="addTask"
         options={{
-         
-          title: 'Explore',
+          
+          title: 'Add new Task',
           tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
+            <AntDesign name="stepbackward" size={24} color="black" />
           ),
         }}
       />
