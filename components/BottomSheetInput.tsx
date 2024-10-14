@@ -69,7 +69,7 @@ const BottomModalDocumentPicker = ({ form }: Props) => {
               title="Submit"
               onPress={() => {
                 setIsLoading(true); // Indicate loading state
-                fetchChatCompletion("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", input)
+                fetchChatCompletion("", input)
                   .then(data => {
                     console.log({ data }); // Handle response
                     if (data.success == "true") {
