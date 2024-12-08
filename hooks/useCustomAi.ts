@@ -356,9 +356,7 @@ export const useFetchAiImage = async (uri: string) => {
 
   const image = await fetch(uri)
   const blob = await image.blob()
-  // const openai = new OpenAI({ apiKey: "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" })
-  // openai.chat.completions.create({ model: "gpt-4o", messages: [{ ""}] })
-
+ 
 }
 
 
@@ -366,7 +364,7 @@ export const useFetchAiImage = async (uri: string) => {
 export const useFetchAi = async (userMessage: string, tasks?: Task[], uri?: string | null) => {
   try {
     const openai = new OpenAI({ 
-      apiKey: "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" 
+      apiKey: process.env.EXPO_PUBLIC_OPENAI_API_KEY!
     });
 
 
