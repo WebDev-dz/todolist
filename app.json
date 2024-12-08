@@ -53,8 +53,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "2c1bb975-b600-444e-b18d-376d5db1fca3"
+        "projectId": "988c0ab0-7871-4696-bbc0-9ab1944dc5df"
       }
-    }
+    },
+    "owner": "webdz"
   }
 }
