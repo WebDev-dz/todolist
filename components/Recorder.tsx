@@ -184,7 +184,7 @@ export const ThemedRecorderSheet = forwardRef(
             </TouchableOpacity>
           </View> */}
                 </View>
-                <RecordingControls onDelete={async () => { }} onReset={resetRecording} onSend={async () => { }} />
+                {/* <RecordingControls onDelete={async () => { }} onReset={resetRecording} onSend={async () => { }} /> */}
             </View>
         )
     }
@@ -192,15 +192,16 @@ export const ThemedRecorderSheet = forwardRef(
 
 
 type Controlers = {
-    onSend: () => Promise<void>
+    onSend: (audioUri: string) => Promise<void>
     onDelete: () => Promise<void>
     onReset: () => Promise<void>
 }
 
 
-export const StyledRecorder = forwardRef<View, ViewProps>((props, ref) => {
+export const StyledRecorder = forwardRef<View, ViewProps & Controlers>((props, ref) => {
 
     const [isRecording, setIsRecording] = useState(false);
+    const [uri, setAudioUri] = useState<string | undefined | null>(undefined)
     const [position, setPosition] = useState(0);
     const [duration, setDuration] = useState(0);
     const recorderRef = useRef<RecorderRef>(null);
@@ -221,18 +222,19 @@ export const StyledRecorder = forwardRef<View, ViewProps>((props, ref) => {
         }
     };
 
-   
+
 
     const resetRecording = async () => {
         if (isRecording) return;
         Haptics.selectionAsync();
         await recorderRef.current?.resetRecording();
+        props.onReset()
     };
 
     return (
         <View {...props} ref={ref} style={{ backgroundColor }}>
             <View className="bg-gray-100 rounded-full p-2 flex-row items-center justify-between" >
-                <TouchableOpacity  onPress={toggleRecording} className="p-2 mr-3">
+                <TouchableOpacity onPress={toggleRecording} className="p-2 mr-3">
                     <Ionicons name={isRecording ? "pause" : "play"} size={24} color={textColor} />
                 </TouchableOpacity>
 
@@ -259,7 +261,7 @@ export const StyledRecorder = forwardRef<View, ViewProps>((props, ref) => {
                         onRecordStop={(uri, recordedDuration) => {
                             setIsRecording(false);
                             setDuration(recordedDuration || 0);
-                            console.log(uri);
+                            setAudioUri(uri)
                         }}
                         onPositionChange={(pos: number) => setPosition(pos)}
                         onPlaybackStart={() => setIsPlaying(true)}
@@ -275,27 +277,30 @@ export const StyledRecorder = forwardRef<View, ViewProps>((props, ref) => {
                     <Ionicons name="mic" size={24} color={textColor} />
                 </TouchableOpacity>
             </View>
-            <RecordingControls onDelete={async () => { }} onReset={resetRecording} onSend={async () => { }} />
+            <View className="flex-row justify-between items-center p-3">
+                <View className="flex-row gap-4">
+                    <TouchableOpacity onPress={props.onDelete} className="p-2">
+                        <Ionicons name="trash-outline" size={24} color="red" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={async() => {
+                       await resetRecording();
+                       props.onReset()
+                    }} className="p-2">
+                        <Ionicons name="refresh-outline" size={24} color="blue" />
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={() => { if (uri) props.onSend(uri) }} className="bg-blue-500 px-4 py-2 rounded-full">
+                    <Text className="text-white font-medium">Send</Text>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 });
 
 
-export const RecordingControls = ({ onSend, onDelete, onReset }: Controlers) => (
-    <View className="flex-row justify-between items-center p-3">
-        <View className="flex-row gap-4">
-            <TouchableOpacity onPress={onDelete} className="p-2">
-                <Ionicons name="trash-outline" size={24} color="red" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onReset} className="p-2">
-                <Ionicons name="refresh-outline" size={24} color="blue" />
-            </TouchableOpacity>
-        </View>
-        <TouchableOpacity onPress={onSend} className="bg-blue-500 px-4 py-2 rounded-full">
-            <Text className="text-white font-medium">Send</Text>
-        </TouchableOpacity>
-    </View>
-);
+// export const RecordingControls = ({ onSend, onDelete, onReset }: Controlers) => (
+
+// );
 
 const $sheetContent: ViewStyle = {
     paddingTop: Spacing.md,

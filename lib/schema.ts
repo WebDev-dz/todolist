@@ -4,12 +4,19 @@ import { z } from "zod";
 const AttachmentSchema = z.object({
   
   id: z.string(),
-  uri: z.string().url(),
+  uri: z.string(),
   type: z.string().optional(),
   name: z.string(),
   size: z.number().optional()
   
 });
+
+
+const CategorySchema = z.object({
+  label: z.string(),
+  icon: z.string(),
+  theme: z.string()
+})
 
 const SubtaskSchema = z.object({
   // Define properties of Subtask here
@@ -34,6 +41,7 @@ export const TaskSchema = z.object({
   subtasks: z.array(SubtaskSchema),
   createdAt: z.string(),
   updatedAt: z.string(),
+  category: CategorySchema.optional()
 });
 
 // Define the Task type from the schema
@@ -65,4 +73,24 @@ export const defaultTask : Task = {
   updatedAt: (new Date()).toString(),
 
 
+
 }
+
+export const GoalSchema = z.object({
+  id: z.string().optional(),
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  startDate: z.string(),
+  dueDate: z.string(),
+  milestones: z.array(z.object({
+    id: z.string().optional(),
+    title: z.string(),
+    description: z.string().optional(),
+    dueDate: z.string(),
+    completed: z.boolean().optional().default(false)
+  })),
+  completed: z.boolean().optional().default(false),
+  createdAt: z.string().optional(),
+  updatedAt: z.string().optional()
+});

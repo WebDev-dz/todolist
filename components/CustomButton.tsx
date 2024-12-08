@@ -40,6 +40,7 @@ const CustomButton = ({
   IconLeft,
   IconRight,
   className,
+  textClassName,
   ...props
 }: ButtonProps) => {
   return (
@@ -49,7 +50,7 @@ const CustomButton = ({
       {...props}
     >
       {IconLeft && <IconLeft />}
-      <Text className={`text-lg font-bold ${getTextVariantStyle(textVariant)}`}>
+      <Text className={textClassName}>
         {title}
       </Text>
       {IconRight && <IconRight />}

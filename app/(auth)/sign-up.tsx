@@ -1,8 +1,18 @@
 import { useSignUp } from "@clerk/clerk-expo";
 import { Link, router } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, ScrollView, Text, View } from "react-native";
+import { 
+  Alert, 
+  Image, 
+  ScrollView, 
+  Text, 
+  View,
+  SafeAreaView,
+  TouchableOpacity,
+  useWindowDimensions 
+} from "react-native";
 import { ReactNativeModal } from "react-native-modal";
+import { Ionicons } from '@expo/vector-icons';
 
 import CustomButton from "@/components/CustomButton";
 import InputField from "@/components/InputField";
@@ -13,12 +23,14 @@ import { fetchAPI } from "@/lib/fetch";
 const SignUp = () => {
   const { isLoaded, signUp, setActive } = useSignUp();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-
+  const { height } = useWindowDimensions();
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [form, setForm] = useState({
     name: "",
     email: "",
     password: "",
   });
+
   const [verification, setVerification] = useState({
     state: "default",
     error: "",
@@ -27,6 +39,7 @@ const SignUp = () => {
 
   const onSignUpPress = async () => {
     if (!isLoaded) return;
+    setIsSubmitting(true)
     try {
       await signUp.create({
         emailAddress: form.email,
@@ -38,12 +51,13 @@ const SignUp = () => {
         state: "pending",
       });
     } catch (err: any) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
       console.log(JSON.stringify(err, null, 2));
       Alert.alert("Error", err.errors[0].longMessage);
+    } finally {
+      setIsSubmitting(false)
     }
   };
+
   const onPressVerify = async () => {
     if (!isLoaded) return;
     try {
@@ -72,8 +86,8 @@ const SignUp = () => {
         });
       }
     } catch (err: any) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
+
+      console.log(err)
       setVerification({
         ...verification,
         error: err.errors[0].longMessage,
@@ -81,115 +95,146 @@ const SignUp = () => {
       });
     }
   };
+
   return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="flex-1 bg-white">
-        <View className="relative w-full h-[250px]">
-          <Image source={images.signUpCar} className="z-0 w-full h-[250px]" />
-          <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
-            Create Your Account
-          </Text>
+    <SafeAreaView style={{ height }} className="flex-1 bg-gray-100">
+      <ScrollView className="flex-1">
+        {/* Header Section */}
+        <View className="bg-blue-500 pt-20 pb-6 mb-10">
+         
+          
+          <View className="px-4">
+            <Text className="text-white text-3xl font-bold mb-2">Create Account 🚀</Text>
+            <Text className="text-white/80">Join us to start managing your tasks</Text>
+          </View>
         </View>
-        <View className="p-5">
-          <InputField
-            label="Name"
-            placeholder="Enter name"
-            icon={icons.person}
-            value={form.name}
-            onChangeText={(value) => setForm({ ...form, name: value })}
-          />
-          <InputField
-            label="Email"
-            placeholder="Enter email"
-            icon={icons.email}
-            textContentType="emailAddress"
-            value={form.email}
-            onChangeText={(value) => setForm({ ...form, email: value })}
-          />
-          <InputField
-            label="Password"
-            placeholder="Enter password"
-            icon={icons.lock}
-            secureTextEntry={true}
-            textContentType="password"
-            value={form.password}
-            onChangeText={(value) => setForm({ ...form, password: value })}
-          />
-          <CustomButton
-            title="Sign Up"
-            onPress={onSignUpPress}
-            className="mt-6"
-          />
-          <OAuth />
-          <Link
-            href="/sign-in"
-            className="text-lg text-center text-general-200 mt-10"
-          >
-            Already have an account?{" "}
-            <Text className="text-primary-500">Log In</Text>
-          </Link>
+
+        {/* Form Section */}
+        <View className="p-4 -mt-4 bg-gray-100 rounded-t-3xl">
+          <View className="bg-white p-4 rounded-xl shadow-sm">
+            <InputField
+              label="Name"
+              placeholder="Enter your name"
+              icon={icons.person}
+              value={form.name}
+              inputStyle= {verification.error && "border border-red-400"}
+              onChangeText={(value) => setForm({ ...form, name: value })}
+              className={verification.error && "border border-red-400"}
+            />
+
+            <InputField
+              label="Email"
+              placeholder="Enter your email"
+              icon={icons.email}
+              textContentType="emailAddress"
+              value={form.email}
+              onChangeText={(value) => setForm({ ...form, email: value })}
+              // className="mb-4"
+            />
+
+            <InputField
+              label="Password"
+              placeholder="Enter your password"
+              icon={icons.lock}
+              secureTextEntry={true}
+              textContentType="password"
+              value={form.password}
+              onChangeText={(value) => setForm({ ...form, password: value })}
+              // className="mb-6"
+            />
+
+            <CustomButton
+              title="Sign Up"
+              onPress={onSignUpPress}
+              disabled = {isSubmitting}
+              className="bg-blue-500 py-3 rounded-xl"
+              textClassName="text-white text-center font-semibold text-lg"
+            />
+          </View>
+
+          {/* OAuth Section */}
+          <View className="mt-6">
+            <Text className="text-center text-gray-500 mb-4">Or continue with</Text>
+            <OAuth />
+          </View>
+
+          {/* Sign In Link */}
+          <View className="mt-8 flex-row justify-center">
+            <Text className="text-gray-600">Already have an account? </Text>
+            <Link href="/sign-in" asChild>
+              <TouchableOpacity disabled= {verification.state == "pending"}>
+                <Text className="text-blue-500 font-semibold">Sign In</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
         </View>
+
+        {/* Verification Modal */}
         <ReactNativeModal
           isVisible={verification.state === "pending"}
-          // onBackdropPress={() =>
-          //   setVerification({ ...verification, state: "default" })
-          // }
           onModalHide={() => {
             if (verification.state === "success") {
               setShowSuccessModal(true);
             }
           }}
         >
-          <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
-            <Text className="font-JakartaExtraBold text-2xl mb-2">
-              Verification
+          <View className="bg-white p-6 rounded-2xl">
+            <Text className="text-2xl font-bold mb-2">Verification</Text>
+            <Text className="text-gray-600 mb-6">
+              We've sent a verification code to {form.email}
             </Text>
-            <Text className="font-Jakarta mb-5">
-              We've sent a verification code to {form.email}.
-            </Text>
+
             <InputField
-              label={"Code"}
+              label="Code"
               icon={icons.lock}
-              placeholder={"12345"}
+              placeholder="Enter verification code"
               value={verification.code}
               keyboardType="numeric"
-              onChangeText={(code) =>
-                setVerification({ ...verification, code })
-              }
+              onChangeText={(code) => setVerification({ ...verification, code })}
+              className="mb-2"
             />
+
             {verification.error && (
-              <Text className="text-red-500 text-sm mt-1">
+              <Text className="text-red-500 text-sm mb-4">
                 {verification.error}
               </Text>
             )}
+
             <CustomButton
               title="Verify Email"
               onPress={onPressVerify}
-              className="mt-5 bg-success-500"
+              className="bg-blue-500 py-3 rounded-xl"
+              textClassName="text-white text-center font-semibold text-lg"
             />
           </View>
         </ReactNativeModal>
+
+        {/* Success Modal */}
         <ReactNativeModal isVisible={showSuccessModal}>
-          <View className="bg-white px-7 py-9 rounded-2xl min-h-[300px]">
-            <Image
-              source={images.check}
-              className="w-[110px] h-[110px] mx-auto my-5"
-            />
-            <Text className="text-3xl font-JakartaBold text-center">
-              Verified
+          <View className="bg-white p-6 rounded-2xl items-center">
+            <View className="w-24 h-24 bg-blue-100 rounded-full items-center justify-center mb-6">
+              <Ionicons name="checkmark-circle" size={48} color="#3b82f6" />
+            </View>
+
+            <Text className="text-2xl font-bold text-center mb-2">
+              Verified Successfully!
             </Text>
-            <Text className="text-base text-gray-400 font-Jakarta text-center mt-2">
-              You have successfully verified your account.
+            
+            <Text className="text-gray-500 text-center mb-6">
+              Your account has been verified successfully. Welcome aboard!
             </Text>
+
             <CustomButton
-              title="Browse Home"
-              onPress={() => router.push(`/(tabs)/`)}
-              className="mt-5"
+              title="Get Started"
+              onPress={() => router.push('/(tabs)/')}
+              className="bg-blue-500 py-3 rounded-xl w-full"
+              textClassName="text-white text-center font-semibold text-lg"
             />
           </View>
         </ReactNativeModal>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
+
 export default SignUp;

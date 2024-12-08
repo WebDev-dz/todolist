@@ -30,7 +30,7 @@ import noResult from "@/assets/images/no-result.png";
 import onboarding1 from "@/assets/images/onboarding1.png";
 import onboarding2 from "@/assets/images/onboarding2.png";
 import onboarding3 from "@/assets/images/onboarding3.png";
-import signUpCar from "@/assets/images/signup-car.png";
+import signUpCar from "@/assets/images/get-started.png";
 
 export const images = {
   onboarding1,
@@ -98,3 +98,33 @@ export const onboarding = [
 export const data = {
   onboarding,
 };
+
+
+
+export const categories = [
+  {
+    label: "Fitness",
+    icon: "🏃‍♂️",
+    theme: "#22d3ee"
+  },
+  {
+    label: "Study",
+    icon: "📚",
+    theme: "#9333ea"
+  },
+  {
+    label: "Religion",
+    icon: "🙏",
+    theme: "#ef4444"
+  },
+  {
+    label: "Project",
+    icon: "📋",
+    theme: "#6366f1"
+  },
+  {
+    label: "Job",
+    icon: "💼",
+    theme: "#16a34a"
+  }
+];

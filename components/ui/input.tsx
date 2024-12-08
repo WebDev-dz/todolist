@@ -12,7 +12,7 @@ const Input = forwardRef<TextInput, InputProps>(
     return (
       <View className={`my-2 ${containerClassName || ''}`}>
         <TextInput
-          className={`h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black placeholder:text-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 ${className || ''}`}
+          className={`h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-black placeholder:text-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 ${className || ''}`}
           placeholderTextColor="#a1a1aa"
           ref={ref}
           {...props}
@@ -65,7 +65,7 @@ const CustomInput = ({
               onChangeText={onChange}
               onBlur={onBlur}
               placeholder={placeholder}
-              className= {cn("w-full rounded-lg p-1 flex-1")}
+              className= {cn("w-full rounded-xl p-1 flex-1")}
               secureTextEntry={secureTextEntry}
             />
           </View>

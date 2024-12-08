@@ -69,7 +69,7 @@ const BottomModalDocumentPicker = ({ form }: Props) => {
               title="Submit"
               onPress={() => {
                 setIsLoading(true); // Indicate loading state
-                fetchChatCompletion("", input)
+                fetchChatCompletion(process.env.OPENAI_API_KEY!, input)
                   .then(data => {
                     console.log({ data }); // Handle response
                     if (data.success == "true") {

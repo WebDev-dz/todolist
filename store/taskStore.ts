@@ -5,11 +5,24 @@ import { createClient } from "@supabase/supabase-js";
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import * as Notifications from 'expo-notifications';
+import { categories } from "@/constants";
+import { useNotificationStore } from "./notificationStore";
+import NetInfo from "@react-native-community/netinfo";
 
+import { formatISO } from "date-fns";
+import { useCalendarStore } from "./calendarStore";
+import { SupabaseService } from "@/db/supabaseService";
 // Supabase setup (replace with your actual Supabase URL and anon key)
 const supabase = createClient(process.env.EXPO_PUBLIC_SUPABASE_URL!, process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!);
 
 // Define types (Subtask, Attachment, and Task remain the same as before)
+
+export type Category = {
+  label: string
+  icon: string,
+  theme: string
+}
+
 export type Subtask = {
   id: string;
   title: string;
@@ -32,20 +45,26 @@ export type Task = {
   startDate: string | null;
   startTime: string | null;
   notes: string;
-  attachments: Attachment[];
+  attachments?: Attachment[] | null;
   alertTime: string | null;
-  subtasks: Subtask[];
+  subtasks?: Subtask[] | null;
+  reminderType?: 'notification' | 'alarm';  // Add reminderType
   createdAt: string;
   updatedAt: string;
+  category?: Category | null 
 };
 
 // Enhanced TaskStore type
 export type TaskStore = {
+  userId: string | undefined;
   tasks: Task[];
   generatedByAi: Task[];
   selectedTask: Task | null;
+  setUserId: (userId?: string) => undefined
+  getCompletedTasks: () => number;
   setTasks: (tasks: Task[]) => void;
   setGeneratedByAi: (tasks: Task[]) => void;
+  checkExistTask: (task: Task) => boolean;
   addTask: (task: Task) => void;
   updateTask: (updatedTask: Task) => void;
   deleteTask: (taskId: string) => void;
@@ -58,6 +77,14 @@ export type TaskStore = {
   deleteAttachment: (taskId: string, attachmentId: string) => void;
   backupToSupabase: () => Promise<void>;
   checkAndTriggerAlerts: () => Promise<void>;
+  getExpired: (task: Task) => boolean;
+   // New methods for category management
+   categories: Category[],
+   setCategories: (categories: Category[]) => void;
+   addCategory: (category: Category) => void;
+   updateCategory: (label: string, updatedCategory: Category) => void;
+   deleteCategory: (label: string) => void;
+   getCategoryTasks: (categoryLabel: string) => Task[];
 };
 
 // Background task for daily backups
@@ -70,11 +97,12 @@ TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
     await store.backupToSupabase();
     return BackgroundFetch.BackgroundFetchResult.NewData;
   } catch (error) {
+    console.log({ BackupError: error })
     return BackgroundFetch.BackgroundFetchResult.Failed;
   }
 });
 
-TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({data, error, executionInfo}) => {
+TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error, executionInfo }) => {
   try {
     const store = useTaskStore.getState();
     store.checkAndTriggerAlerts();
@@ -119,7 +147,7 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
-    
+
   }),
 
 });
@@ -128,21 +156,76 @@ Notifications.setNotificationHandler({
 export const useTaskStore = create<TaskStore>()(
   persist(
     (set, get) => ({
+      userId: undefined,
       tasks: [],
+      categories: [],  // New property to store categories
       generatedByAi: [],
       selectedTask: null,
-      setGeneratedByAi : (tasks) => set({generatedByAi: tasks}),
+      setUserId(userId) {
+        set((state) => ({...state, userId}))
+      },
+      getCompletedTasks: () => (get().tasks.filter(t => t.completed == true).length),
+      setGeneratedByAi: (tasks) => set({ generatedByAi: tasks }),
       setTasks: (tasks) => set({ tasks }),
 
-      addTask: (newTask) => set((state) => ({ tasks: [...state.tasks, newTask] })),
+      addTask: async (newTask) => {
+        set((state) => ({ tasks: [...state.tasks, newTask] }));
+        // Schedule notification for the new task
+        useNotificationStore.getState().scheduleTaskNotification(newTask);
+        // Create calendar event
+        const calendarStore = useCalendarStore.getState();
+        await calendarStore.createTaskEvent(newTask);
+      },
 
-      updateTask: (updatedTask) => set((state) => ({
-        tasks: state.tasks.map((task) => task.id === updatedTask.id ? updatedTask : task)
-      })),
+      checkExistTask: (task: Task) => (get().tasks.find(t => t.id == task.id) !== undefined),
 
-      deleteTask: (taskId) => set((state) => ({
-        tasks: state.tasks.filter((task) => task.id !== taskId)
-      })),
+      // Update the updateTask function
+      updateTask: async (updatedTask) => {
+        let newTask = updatedTask;
+        const subtasks = updatedTask.subtasks
+        if (subtasks && subtasks?.filter(sub => !sub.completed).length == 0) {
+          newTask.completed = true
+        }
+        set((state) => ({
+          tasks: state.tasks.map((task) =>
+            task.id === newTask.id ? newTask : task
+          )
+        }));
+
+        
+        // Reschedule notification for the updated task
+        useNotificationStore.getState().scheduleTaskNotification(newTask);
+        // Update calendar event
+        const calendarStore = useCalendarStore.getState();
+        await calendarStore.updateTaskEvent(updatedTask);
+      },
+
+
+
+      // Update the deleteTask function
+      deleteTask: async (taskId) => {
+        try {
+          const userId = useTaskStore.getState().userId
+          set((state) => ({
+            tasks: state.tasks.filter((task) => task.id !== taskId)
+          }));
+
+          // Cancel notification
+          await useNotificationStore.getState().cancelTaskNotification(taskId);
+          
+          // Delete calendar event
+          await useCalendarStore.getState().deleteTaskEvent(taskId);
+          
+          // Delete from Supabase if online
+          const netInfo = await NetInfo.fetch();
+          if (netInfo.isConnected, userId) {
+            const supabaseService = SupabaseService.getInstance();
+            await supabaseService.deleteTask(taskId, userId);
+          }
+        } catch (error) {
+          console.error('Error deleting task:', error);
+        }
+      },
 
       setSelectedTask: (taskId) => set((state) => ({
         selectedTask: state.tasks.find((task) => task.id === taskId) || null
@@ -153,7 +236,7 @@ export const useTaskStore = create<TaskStore>()(
       addSubtask: (taskId, subtask) => set((state) => ({
         tasks: state.tasks.map((task) =>
           task.id === taskId
-            ? { ...task, subtasks: [...task.subtasks, subtask] }
+            ? { ...task, subtasks: [...task.subtasks!, subtask] }
             : task
         )
       })),
@@ -162,11 +245,11 @@ export const useTaskStore = create<TaskStore>()(
         tasks: state.tasks.map((task) =>
           task.id === taskId
             ? {
-                ...task,
-                subtasks: task.subtasks.map((subtask) =>
-                  subtask.id === updatedSubtask.id ? updatedSubtask : subtask
-                ),
-              }
+              ...task,
+              subtasks: task.subtasks!.map((subtask) =>
+                subtask.id === updatedSubtask.id ? updatedSubtask : subtask
+              ),
+            }
             : task
         )
       })),
@@ -175,9 +258,9 @@ export const useTaskStore = create<TaskStore>()(
         tasks: state.tasks.map((task) =>
           task.id === taskId
             ? {
-                ...task,
-                subtasks: task.subtasks.filter((subtask) => subtask.id !== subtaskId),
-              }
+              ...task,
+              subtasks: task.subtasks!.filter((subtask) => subtask.id !== subtaskId),
+            }
             : task
         )
       })),
@@ -185,7 +268,7 @@ export const useTaskStore = create<TaskStore>()(
       addAttachment: (taskId, attachment) => set((state) => ({
         tasks: state.tasks.map((task) =>
           task.id === taskId
-            ? { ...task, attachments: [...task.attachments, attachment] }
+            ? { ...task, attachments: [...task.attachments!, attachment] }
             : task
         )
       })),
@@ -194,19 +277,28 @@ export const useTaskStore = create<TaskStore>()(
         tasks: state.tasks.map((task) =>
           task.id === taskId
             ? {
-                ...task,
-                attachments: task.attachments.filter((att) => att.id !== attachmentId),
-              }
+              ...task,
+              attachments: task.attachments!.filter((att) => att.id !== attachmentId),
+            }
             : task
         )
       })),
+      getExpired(task) {
+        if (task.startDate && task.startTime) {
+          const startTime = Date.parse(task.startTime);
+          console.log(task.startDate, startTime);
+          return new Date() > new Date(`${task.startDate}T${task.startTime}`)
+        } else {
 
+          return false;
+        }
+      },
       backupToSupabase: async () => {
         const { tasks } = get();
         const { data, error } = await supabase
-          .from('tasks_backup')
+          .from('tasks')
           .upsert({ user_id: 'current_user_id', tasks: tasks }, { onConflict: 'user_id' });
-        
+
         if (error) {
           console.error('Error backing up to Supabase:', error);
         } else {
@@ -216,11 +308,11 @@ export const useTaskStore = create<TaskStore>()(
       checkAndTriggerAlerts: async () => {
         const { tasks } = get();
         const now = new Date();
-        
+
         for (const task of tasks) {
           if (task.alertTime && new Date(task.alertTime) <= now && !task.completed) {
             await Notifications.scheduleNotificationAsync({
-              
+
               content: {
                 title: "Task Alert",
                 body: `It's time for your task: ${task.title}`,
@@ -237,12 +329,32 @@ export const useTaskStore = create<TaskStore>()(
           }
         }
       },
-    }),
+       // Category-related methods
+    setCategories: (categories) => set({ categories }),
+
+    addCategory: (category) => set((state) => ({
+      categories: [...state.categories, category],
+    })),
+
+    updateCategory: (label, updatedCategory) => set((state) => ({
+      categories: state.categories.map((cat) =>
+        cat.label === label ? updatedCategory : cat
+      ),
+    })),
+
+    deleteCategory: (label) => set((state) => ({
+      categories: state.categories.filter((cat) => cat.label !== label),
+    })),
+
+    getCategoryTasks: (categoryLabel) =>
+      get().tasks.filter((task) => task.category?.label === categoryLabel),
+  }
+    ),
     {
       name: 'task-storage',
       storage: createJSONStorage(() => AsyncStorage),
-     
       
+
     }
   )
 );

@@ -1,18 +1,31 @@
 import { useSignIn } from "@clerk/clerk-expo";
 import { Link, router } from "expo-router";
 import { useCallback, useState } from "react";
-import { Alert, Image, ScrollView, Text, View } from "react-native";
-
+import { 
+  Alert, 
+  Image, 
+  ScrollView, 
+  Text, 
+  View, 
+  SafeAreaView,
+  TouchableOpacity,
+  useWindowDimensions
+} from "react-native";
+import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from "@/hooks/ThemeProvider";
 import CustomButton from "@/components/CustomButton";
 import InputField from "@/components/InputField";
 import OAuth from "@/components/OAuth";
 import { icons, images } from "@/constants";
+import { useTaskStore } from "@/store/taskStore";
+import { cn } from "@/lib/utils";
 
 const SignIn = () => {
   const { signIn, setActive, isLoaded } = useSignIn();
-
+  const { height } = useWindowDimensions();
+  const { setUserId } = useTaskStore()
+  const { isDarkMode } = useTheme();
   const [form, setForm] = useState({
-    
     email: "",
     password: "",
   });
@@ -28,9 +41,9 @@ const SignIn = () => {
 
       if (signInAttempt.status === "complete") {
         await setActive({ session: signInAttempt.createdSessionId });
+        
         router.push("/(tabs)/");
       } else {
-        // See https://clerk.com/docs/custom-flows/error-handling for more info on error handling
         console.log(JSON.stringify(signInAttempt, null, 2));
         Alert.alert("Error", "Log in failed. Please try again.");
       }
@@ -41,53 +54,82 @@ const SignIn = () => {
   }, [isLoaded, form]);
 
   return (
-    <ScrollView className="flex-1 bg-white">
-      <View className="flex-1 bg-white">
-        <View className="relative w-full h-[250px]">
-          <Image source={images.signUpCar} className="z-0 w-full h-[250px]" />
-          <Text className="text-2xl text-black font-JakartaSemiBold absolute bottom-5 left-5">
-            Welcome 👋
-          </Text>
+    <SafeAreaView style={{ height }} className={cn("flex-1", isDarkMode ? "bg-gray-800" : "bg-gray-100")}>
+      <ScrollView>
+        {/* Header Section */}
+        <View className="bg-blue-500 pt-4 pb-6">
+          <View className="px-4 flex-row items-center mb-4">
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              className="mr-4"
+            >
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            <Text className="text-white text-xl font-semibold">Sign In</Text>
+          </View>
+          
+          <View className="px-4">
+            <Text className="text-white text-3xl font-bold mb-2">Welcome Back! 👋</Text>
+            <Text className="text-white/80">Sign in to continue managing your tasks</Text>
+          </View>
         </View>
 
-        <View className="p-5">
-          <InputField
-            label="Email"
-            placeholder="Enter email"
-            icon={icons.email}
-            textContentType="emailAddress"
-            value={form.email}
-            onChangeText={(value) => setForm({ ...form, email: value })}
-          />
+        {/* Form Section */}
+        <View className={cn("p-4 -mt-4 rounded-t-3xl", isDarkMode ? "bg-gray-800" : "bg-gray-100")}>
+          <View className={cn("p-4 rounded-xl shadow-sm", isDarkMode ? "bg-gray-700" : "bg-white")}>
+            <InputField
+              label="Email"
+              placeholder="Enter your email"
+              icon={icons.email}
+              textContentType="emailAddress"
+              value={form.email}
+              onChangeText={(value) => setForm({ ...form, email: value })}
+              className="mb-4"
+              textClassName={isDarkMode ? "text-white" : "text-gray-800"}
+            />
 
-          <InputField
-            label="Password"
-            placeholder="Enter password"
-            icon={icons.lock}
-            secureTextEntry={true}
-            textContentType="password"
-            value={form.password}
-            onChangeText={(value) => setForm({ ...form, password: value })}
-          />
+            <InputField
+              label="Password"
+              placeholder="Enter your password"
+              icon={icons.lock}
+              secureTextEntry={true}
+              textContentType="password"
+              value={form.password}
+              onChangeText={(value) => setForm({ ...form, password: value })}
+              className="mb-6"
+              textClassName={isDarkMode ? "text-white" : "text-gray-800"}
+            />
 
-          <CustomButton
-            title="Sign In"
-            onPress={onSignInPress}
-            className="mt-6"
-          />
+            <CustomButton
+              title="Sign In"
+              onPress={onSignInPress}
+              className="bg-blue-500 py-3 rounded-xl"
+              textClassName="text-white text-center font-semibold text-lg"
+            />
+          </View>
 
-          <OAuth />
+          {/* OAuth Section */}
+          <View className="mt-6">
+            <Text className={cn("text-center mb-4", isDarkMode ? "text-gray-300" : "text-gray-500")}>
+              Or continue with
+            </Text>
+            <OAuth />
+          </View>
 
-          <Link
-            href="/(auth)/sign-up"
-            className="text-lg text-center text-general-200 mt-10"
-          >
-            Don't have an account?{" "}
-            <Text className="text-primary-500">Sign Up</Text>
-          </Link>
+          {/* Sign Up Link */}
+          <View className="mt-8 flex-row justify-center">
+            <Text className={cn(isDarkMode ? "text-gray-300" : "text-gray-600")}>
+              Don't have an account?{" "}
+            </Text>
+            <Link href="/(auth)/sign-up" asChild>
+              <TouchableOpacity>
+                <Text className="text-blue-500 font-semibold">Sign Up</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 

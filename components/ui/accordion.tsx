@@ -1,84 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Make sure to install expo-vector-icons
-import { styled } from 'nativewind';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, LayoutAnimation } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { cn } from '@/lib/utils';
 
+interface AccordionProps {
+  title: string;
+  children: React.ReactNode;
+  badge?: number;
+  isDarkMode?: boolean;
+}
 
-const Accordion = ({ children }) => {
-  return <View className="w-full">{children}</View>;
-};
+const Accordion: React.FC<AccordionProps> = ({
+  title,
+  children,
+  badge,
+  isDarkMode
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true);
 
-const AccordionItem = ({ children }) => {
-  return <View className="border-b border-gray-200">{children}</View>;
-};
-
-const AccordionTrigger = ({ children, onPress, isOpen }) => {
-  return (
-    <TouchableOpacity
-      className="flex-row justify-between items-center py-4"
-      onPress={onPress}
-    >
-      <Text className="text-sm font-medium">{children}</Text>
-      <Animated.View style={{ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}>
-        <Ionicons name="chevron-down" size={24} color="#666" />
-      </Animated.View>
-    </TouchableOpacity>
-  );
-};
-
-const AccordionContent = ({ children, isOpen }) => {
-  const [height] = useState(new Animated.Value(0));
-
-  useEffect(() => {
-    Animated.timing(height, {
-      toValue: isOpen ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isOpen]);
-
-  return (
-    <Animated.View
-      className="overflow-hidden"
-      style={{
-        opacity: height,
-        height: height.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, 100], // Adjust this value based on your content
-        }),
-      }}
-    >
-      <View className="pb-4">{children}</View>
-    </Animated.View>
-  );
-};
-
-const AccordionExample = () => {
-  const [openIndex, setOpenIndex] = useState(null);
-
-  const toggleAccordion = (index) => {
-    setOpenIndex(openIndex === index ? null : index);
+  const toggleExpand = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsExpanded(!isExpanded);
   };
 
   return (
-    <Accordion>
-      {[0, 1, 2].map((index) => (
-        <AccordionItem key={index}>
-          <AccordionTrigger
-            onPress={() => toggleAccordion(index)}
-            isOpen={openIndex === index}
-          >
-            Accordion Item {index + 1}
-          </AccordionTrigger>
-          <AccordionContent isOpen={openIndex === index}>
-            <Text className="text-sm text-gray-600">
-              This is the content for accordion item {index + 1}. You can put any components or text here.
-            </Text>
-          </AccordionContent>
-        </AccordionItem>
-      ))}
-    </Accordion>
+    <View className="mb-4">
+      <TouchableOpacity
+        onPress={toggleExpand}
+        className={cn(
+          "flex-row items-center justify-between p-4 rounded-t-xl",
+          isDarkMode ? "bg-gray-800" : "bg-white"
+        )}
+      >
+        <View className="flex-row items-center">
+          <Text className={cn(
+            "text-lg font-semibold",
+            isDarkMode ? "text-white" : "text-gray-900"
+          )}>
+            {title}
+          </Text>
+          {badge !== undefined && badge > 0 && (
+            <View className={cn(
+              "ml-2 px-2 py-0.5 rounded-full",
+              isDarkMode ? "bg-gray-700" : "bg-gray-100"
+            )}>
+              <Text className={cn(
+                "text-sm",
+                isDarkMode ? "text-gray-300" : "text-gray-600"
+              )}>
+                {badge}
+              </Text>
+            </View>
+          )}
+        </View>
+        <Ionicons
+          name={isExpanded ? "chevron-up" : "chevron-down"}
+          size={20}
+          color={isDarkMode ? "#9CA3AF" : "#6B7280"}
+        />
+      </TouchableOpacity>
+      
+      {isExpanded && (
+        <View className={cn(
+          "px-2 py-1 rounded-b-xl",
+          isDarkMode ? "bg-gray-800" : "bg-white"
+        )}>
+          {children}
+        </View>
+      )}
+    </View>
   );
 };
 
-export { Accordion, AccordionItem, AccordionTrigger, AccordionContent, AccordionExample };
+export default Accordion;

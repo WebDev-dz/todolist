@@ -11,11 +11,15 @@ type GroupedTasks = {
   [key: string]: Task[];
 };
 
+export const hasTasksOnDate = (tasks: Task[], date: Date) => {
+  const dateString = date.toISOString().split('T')[0];
+  return tasks.some(task => task.startDate === dateString);
+};
 
 
 
 
-export const extractDays = (tasks: Task[]) => {
+export const extractDays = (tasks: Task[]): [string, Task[]][] => {
 
 
   const map = new Map<string, Task[]>()

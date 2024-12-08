@@ -15,6 +15,9 @@
     "ios": {
       "supportsTablet": true
     },
+    "permissions": [
+      "VIBRATE"
+    ],
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -29,7 +32,10 @@
     },
     "plugins": [
       "expo-router",
-      "expo-document-picker"
+      "expo-document-picker",
+      "expo-calendar",
+      "@prisma/react-native",
+      "expo-alarm-module"
     ],
     "experiments": {
       "typedRoutes": true

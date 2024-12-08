@@ -31,7 +31,7 @@ export const tokenCache = {
 export const googleOAuth = async (startOAuthFlow: any) => {
   try {
     const { createdSessionId, setActive, signUp } = await startOAuthFlow({
-      redirectUrl: Linking.createURL("/(root)/(tabs)/home"),
+      redirectUrl: Linking.createURL("/(tabs)/"),
     });
 
     if (createdSessionId) {
