@@ -1,91 +1,81 @@
-import { Tabs } from 'expo-router';
-import React, { useEffect } from 'react';
-import { Stack } from 'expo-router';
-import "@/global.css";
-import { AntDesign } from '@expo/vector-icons';
-// import styled from 'styled-components/native';
+import { Drawer } from 'expo-router/drawer';
+import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
 
-import { useAuth, useUser } from "@clerk/clerk-expo";
-import { Redirect } from "expo-router";
-import { useSession } from '@clerk/clerk-expo';
-import { useSupabaseClient } from '@/db';
-import { useTaskStore } from '@/store/taskStore';
-import { Text } from 'react-native';
+type DrawerIconProps = {
+  color: string;
+  size: number;
+};
 
-export default function () {
-  const { user } = useUser()
-  const { session } = useSession();
-  const supabase = useSupabaseClient();
-  const { setUserId } = useTaskStore();
-  useEffect(() => {
-    if (session) {
-      setUserId(user?.id)
-      // Example of making an authenticated query
-      const fetchUserData = async () => {
-        const { data: tasksData, error: tasksError,  } = await supabase
-        .from('tasks')
-        .select(`*`)
-        .order('createdAt', { ascending: false });
-
-      if (tasksError) {
-        throw tasksError;
-      }
-      tasksData.forEach((task) => {
-          useTaskStore.getState().addTask(task)
-        })
-        console.log('User data:', );
-      };
-
-      fetchUserData();
-    } else {
-      setUserId(undefined)
-    }
-  }, [session]);
-
-  
-
-  if (!session?.user) {
-    return <Redirect href="/(auth)/welcome" />;
-  }
-  
-
-
-  
-
+export default function RootLayout() {
   return (
-    <Tabs
+    <Drawer
       screenOptions={{
-        tabBarActiveTintColor: "",
         headerShown: false,
-        tabBarStyle: {
-          display: "none"
-        }
-      }}>
-      <Tabs.Screen
-        name="habits"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
-        name="notes"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Tabs.Screen
+        drawerStyle: {
+          backgroundColor: '#fff',
+          width: 280,
+        },
+        drawerType: "front"
+      }}
+    >
+      {/* Main Screens */}
+      <Drawer.Screen
         name="goals"
         options={{
-          headerShown: false,
-          
+          drawerLabel: 'Goals',
+          drawerIcon: ({ color, size }: DrawerIconProps) => (
+            <Ionicons name="flag-outline" size={size} color={color} />
+          ),
         }}
       />
-    </Tabs>
+      <Drawer.Screen
+        name="habits"
+        options={{
+          drawerLabel: 'Habits',
+          drawerIcon: ({ color, size }: DrawerIconProps) => (
+            <Ionicons name="calendar-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="notes"
+        options={{
+          drawerLabel: 'Notes',
+          drawerIcon: ({ color, size }: DrawerIconProps) => (
+            <Ionicons name="document-text-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* Drawer Screens */}
+      <Drawer.Screen
+        name="(drawers)/profile"
+        options={{
+          drawerLabel: 'Profile',
+          drawerIcon: ({ color, size }: DrawerIconProps) => (
+            <Ionicons name="person-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="(drawers)/notifications"
+        options={{
+          drawerLabel: 'Notifications',
+          drawerIcon: ({ color, size }: DrawerIconProps) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        name="(drawers)/settings"
+        options={{
+          drawerLabel: 'Settings',
+          drawerIcon: ({ color, size }: DrawerIconProps) => (
+            <Ionicons name="settings-outline" size={size} color={color} />
+          ),
+        }}
+      />
+    </Drawer>
   );
 }
