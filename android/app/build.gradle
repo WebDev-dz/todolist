@@ -111,7 +111,7 @@ android {
 
     namespace 'com.youcef47.todolist'
     defaultConfig {
-        applicationId 'com.youcef47.todolist'
+        applicationId "com.youcef47.todolist"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
